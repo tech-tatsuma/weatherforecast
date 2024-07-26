@@ -50,7 +50,7 @@ class ConfigParser:
     @classmethod
     def from_args(cls, args, options=''):
         """
-        CLI引数からこのクラスを初期化します。トレーニング、テストに使用されます。
+        CLI引数からこのクラスを初期化します。トレーニング、テストに使用される。
         """
         for opt in options:
             args.add_argument(*opt.flags, default=None, type=opt.type)
@@ -79,7 +79,7 @@ class ConfigParser:
 
     def init_obj(self, name, module, *args, **kwargs):
         """
-        設定で指定された'type'の名前で関数ハンドルを見つけ、対応する引数で初期化されたインスタンスを返します。
+        設定で指定された'type'の名前で関数ハンドルを見つけ、対応する引数で初期化されたインスタンスを返す。
         """
         module_name = self[name]['type']
         module_args = dict(self[name]['args'])
@@ -89,7 +89,7 @@ class ConfigParser:
 
     def init_ftn(self, name, module, *args, **kwargs):
         """
-        設定で指定された'type'の名前で関数ハンドルを見つけ、引数が固定された関数をpartialを使って返します。
+        設定で指定された'type'の名前で関数ハンドルを見つけ、引数が固定された関数をpartialを使って返す。
         """
         module_name = self[name]['type']
         module_args = dict(self[name]['args'])
@@ -98,7 +98,7 @@ class ConfigParser:
         return partial(getattr(module, module_name), *args, **module_args)
 
     def __getitem__(self, name):
-        """通常の辞書のようにアイテムにアクセスすることができます。"""
+        """通常の辞書のようにアイテムにアクセスする"""
         return self.config[name]
 
     def get_logger(self, name, verbosity=2):
@@ -133,17 +133,17 @@ def _update_config(config, modification):
     return config
 
 def _get_opt_name(flags):
-    """フラグからオプション名を取得します。"""
+    """フラグからオプション名を取得。"""
     for flg in flags:
         if flg.startswith('--'):
             return flg.replace('--', '')
     return flags[0].replace('--', '')
 
 def _set_by_path(tree, keys, value):
-    """キーのシーケンスによってツリー内のネストされたオブジェクトに値を設定します。"""
+    """キーのシーケンスによってツリー内のネストされたオブジェクトに値を設定。"""
     keys = keys.split(';')
     _get_by_path(tree, keys[:-1])[keys[-1]] = value
 
 def _get_by_path(tree, keys):
-    """キーのシーケンスによってツリー内のネストされたオブジェクトにアクセスします。"""
+    """キーのシーケンスによってツリー内のネストされたオブジェクトにアクセス。"""
     return reduce(getitem, keys, tree)

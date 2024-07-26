@@ -45,11 +45,14 @@ class Trainer(BaseTrainer):
         """
         self.model.train() # モデルをトレーニングモードに設定
         self.train_metrics.reset() # メトリクスのリセット
-        for batch_idx, (data, target) in enumerate(self.data_loader):
-            data, target = data.to(self.device), target.to(self.device) # データをデバイスに移動
+
+        # バッチループ
+        for batch_idx, (data, target, seq_x_mark) in enumerate(self.data_loader):
+            # データをデバイスに転送
+            data, target, seq_x_mark = data.to(self.device), target.to(self.device), seq_x_mark.to(self.device)
 
             self.optimizer.zero_grad() # 勾配をリセット
-            output = self.model(data) # モデルで推論
+            output = self.model(data, seq_x_mark) # モデルで推論
             loss = self.criterion(output, target) # 損失計算
             loss.backward() # 勾配の計算
             self.optimizer.step() # パラメータ更新
@@ -65,7 +68,6 @@ class Trainer(BaseTrainer):
                     epoch,
                     self._progress(batch_idx),
                     loss.item()))
-                self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
 
             if batch_idx == self.len_epoch:
                 break
@@ -77,7 +79,7 @@ class Trainer(BaseTrainer):
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
-        return log
+        return log, self.model
 
     def _valid_epoch(self, epoch):
         """
@@ -89,21 +91,17 @@ class Trainer(BaseTrainer):
         self.model.eval() # モデルを評価モードに設定
         self.valid_metrics.reset() # メトリクスのリセット
         with torch.no_grad(): # 勾配計算を無効化
-            for batch_idx, (data, target) in enumerate(self.valid_data_loader):
-                data, target = data.to(self.device), target.to(self.device)
+            for batch_idx, (data, target, seq_x_mark) in enumerate(self.valid_data_loader):
+                data, target, seq_x_mark = data.to(self.device), target.to(self.device), seq_x_mark.to(self.device)
 
-                output = self.model(data)
+                output = self.model(data, seq_x_mark)
                 loss = self.criterion(output, target)
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, met(output, target))
-                self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
 
-        # モデルパラメータのヒストグラムをTensorBoardに追加
-        for name, p in self.model.named_parameters():
-            self.writer.add_histogram(name, p, bins='auto')
         return self.valid_metrics.result()
 
     def _progress(self, batch_idx):

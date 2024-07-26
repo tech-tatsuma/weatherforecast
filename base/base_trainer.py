@@ -61,8 +61,10 @@ class BaseTrainer:
         トレーニングの全体的なロジック
         """
         not_improved_count = 0 # 改善されなかった回数のカウント
+        best_result = None
         for epoch in range(self.start_epoch, self.epochs + 1):
-            result = self._train_epoch(epoch) # エポックごとのトレーニング実行
+            # エポックごとのトレーニングを実行
+            result, model = self._train_epoch(epoch) # エポックごとのトレーニング実行
 
             # ログ情報を辞書に保存
             log = {'epoch': epoch}
@@ -91,6 +93,8 @@ class BaseTrainer:
                     self.mnt_best = log[self.mnt_metric]
                     not_improved_count = 0
                     best = True
+                    best_result = log[self.mnt_metric]
+                    best_model = model
                 else:
                     # 改善されなかった場合，カウンターをインクリメント
                     not_improved_count += 1
@@ -101,17 +105,7 @@ class BaseTrainer:
                                      "Training stops.".format(self.early_stop))
                     break
 
-            if epoch % self.save_period == 0:
-                self._save_checkpoint(epoch, save_best=best) # チェックポイントの保存
-
-    def _save_checkpoint(self, epoch, save_best=False):
-        """
-        チェックポイントの保存
-
-        :param epoch: 現在のエポック数
-        :param save_best: Trueの場合、保存されたチェックポイントを'model_best.pth'としてリネーム
-        """
-        arch = type(self.model).__name__ # モデルのクラス名を取得
+        arch = type(self.model).__name__
         state = {
             'arch': arch, # モデルのアーキテクチャ名
             'epoch': epoch, # 現在のエポック数
@@ -120,13 +114,9 @@ class BaseTrainer:
             'monitor_best': self.mnt_best, # 監視している最良の評価値
             'config': self.config # トレーニングの設定
         }
-        filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch)) # ファイル名の生成
-        torch.save(state, filename)
-        self.logger.info("Saving checkpoint: {} ...".format(filename)) # ログに保存情報を出力
-        if save_best:
-            best_path = str(self.checkpoint_dir / 'model_best.pth') # 最良のチェックポイントのパス
-            torch.save(state, best_path) # 最良のチェックポイントを保存
-            self.logger.info("Saving current best: model_best.pth ...") # ログに最良の保存情報を出力
+        torch.save(state, str(self.checkpoint_dir / 'best.pth'))
+        
+        return best_result
 
     def _resume_checkpoint(self, resume_path):
         """
