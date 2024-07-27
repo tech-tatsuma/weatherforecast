@@ -115,7 +115,7 @@ class BaseTrainer:
             'config': self.config # トレーニングの設定
         }
         torch.save(state, str(self.checkpoint_dir / 'best.pth'))
-        # torch.save(state, "best_xavier.pth")
+        # torch.save(state, "best.pth")
         
         return best_result
 
