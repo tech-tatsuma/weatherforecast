@@ -109,12 +109,13 @@ class BaseTrainer:
         state = {
             'arch': arch, # モデルのアーキテクチャ名
             'epoch': epoch, # 現在のエポック数
-            'state_dict': self.model.state_dict(), # モデルの状態
+            'state_dict': best_model.state_dict(), # モデルの状態
             'optimizer': self.optimizer.state_dict(), # オプティマイザの状態
             'monitor_best': self.mnt_best, # 監視している最良の評価値
             'config': self.config # トレーニングの設定
         }
         torch.save(state, str(self.checkpoint_dir / 'best.pth'))
+        # torch.save(state, "best_xavier.pth")
         
         return best_result
 

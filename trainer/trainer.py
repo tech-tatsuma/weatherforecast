@@ -47,12 +47,12 @@ class Trainer(BaseTrainer):
         self.train_metrics.reset() # メトリクスのリセット
 
         # バッチループ
-        for batch_idx, (data, target, seq_x_mark) in enumerate(self.data_loader):
+        for batch_idx, (data, target) in enumerate(self.data_loader):
             # データをデバイスに転送
-            data, target, seq_x_mark = data.to(self.device), target.to(self.device), seq_x_mark.to(self.device)
+            data, target = data.to(self.device), target.to(self.device)
 
             self.optimizer.zero_grad() # 勾配をリセット
-            output = self.model(data, seq_x_mark) # モデルで推論
+            output = self.model(data) # モデルで推論
             loss = self.criterion(output, target) # 損失計算
             loss.backward() # 勾配の計算
             self.optimizer.step() # パラメータ更新
@@ -91,10 +91,10 @@ class Trainer(BaseTrainer):
         self.model.eval() # モデルを評価モードに設定
         self.valid_metrics.reset() # メトリクスのリセット
         with torch.no_grad(): # 勾配計算を無効化
-            for batch_idx, (data, target, seq_x_mark) in enumerate(self.valid_data_loader):
-                data, target, seq_x_mark = data.to(self.device), target.to(self.device), seq_x_mark.to(self.device)
+            for batch_idx, (data, target) in enumerate(self.valid_data_loader):
+                data, target = data.to(self.device), target.to(self.device)
 
-                output = self.model(data, seq_x_mark)
+                output = self.model(data)
                 loss = self.criterion(output, target)
 
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')

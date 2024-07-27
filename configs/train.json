@@ -1,5 +1,5 @@
 {
-    "name": "30days",
+    "name": "train",
     "n_gpu": 1,
 
     "data_loader": {
@@ -15,8 +15,8 @@
     "optimizer": {
         "type": "Adam",
         "args":{
-            "lr": 0.001,
-            "weight_decay": 0,
+            "lr": 0.003135101368226758,
+            "weight_decay": 2.0070911211086656e-07,
             "amsgrad": true
         }
     },

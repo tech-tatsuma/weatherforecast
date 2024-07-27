@@ -115,6 +115,7 @@ class Model(nn.Module):
         # 予測層
         self.predict_linear = nn.Linear(
             self.seq_len, self.pred_len + self.seq_len)
+        nn.init.xavier_uniform_(self.predict_linear.weight)
 
         # 活性化関数GELU
         self.act = F.gelu
@@ -123,8 +124,10 @@ class Model(nn.Module):
         # 出力のための線形変換
         self.projection = nn.Linear(
               configs.d_model * configs.seq_len, configs.num_class)
+        
+        nn.init.xavier_uniform_(self.projection.weight)
 
-    def classification(self, x_enc, x_mark_enc):
+    def classification(self, x_enc):
         # 埋め込み層を通してデータを変換
         enc_out = self.enc_embedding(x_enc, None)  # [B,T,C]
         # TimesBlockを通して特徴抽出
@@ -136,9 +139,6 @@ class Model(nn.Module):
         output = self.act(enc_out)
         # ドロップアウトを適用
         output = self.dropout(output)
-        # パディング部分を0に設定
-        # output = output * x_mark_enc.unsqueeze(-1)
-        # バッチサイズと特徴量次元を統合
         # (batch_size, seq_length * d_model)
         output = output.reshape(output.shape[0], -1)
         # 分類のための線形変換
@@ -146,9 +146,9 @@ class Model(nn.Module):
         return output
 
 
-    def forward(self, x_enc, x_mark_enc, x_dec, x_mark_dec, mask=None):
+    def forward(self, x_enc):
         # 分類関数を通じてデコーダー出力を取得
-        dec_out = self.classification(x_enc, x_mark_enc)
+        dec_out = self.classification(x_enc)
         return dec_out  # [B, N]
 
 class Configs:
@@ -164,9 +164,9 @@ class Configs:
         self.c_out = 1  # 出力特徴量の数（次の日のmeantemp）
         self.embed = 'timeF'  # 埋め込みタイプ（時間周波数埋め込み）
         self.freq = 'h'  # 周波数の単位（時）
-        self.dropout = 0  # ドロップアウト率
+        self.dropout = 0.2  # ドロップアウト率
         self.num_class = 1  # 分類するクラスの数
-        self.top_k = 2 # FFT分析で上位k個の周期を考慮
+        self.top_k = 6 # FFT分析で上位k個の周期を考慮
 
 config = Configs()
 model = Model(config)
@@ -177,11 +177,11 @@ class WetherForecastModel(nn.Module):
         # Modelインスタンスを取得
         self.model = model
 
-    def forward(self, x, seq_x_mark):
+    def forward(self, x):
         # データの次元を入れ替え
         x = x.permute(0, 2, 1)
         # モデルを通して特徴量を抽出
-        output = self.model(x, seq_x_mark, None, None)
+        output = self.model(x)
         
         return output
 

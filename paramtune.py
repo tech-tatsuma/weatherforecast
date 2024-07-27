@@ -26,23 +26,34 @@ def main(trial, config):
 
     # ロガーの設定
     logger = config.get_logger('train')
+    # trainデータローダーとvalidデータローダーの設定
     data_loader = config.init_obj('data_loader', module_data)
     valid_data_loader = data_loader.split_validation()
 
+    # モデルの定義
     model = feature_extractor
+    # モデル情報の出力
     logger.info(model)
 
+    # デバイスの設定
     device, device_ids = prepare_device(config['n_gpu'])
+    # モデルをデバイスに転送
     model = model.to(device)
+
+    # 複数GPUを使用する場合
     if len(device_ids) > 1:
         model = torch.nn.DataParallel(model, device_ids=device_ids)
 
+    # 損失関数の定義と評価指標の設定
     criterion = getattr(module_loss, config['loss'])
     metrics = [getattr(module_metric, met) for met in config['metrics']]
 
+    # 学習パラメータの設定
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
+    # 最適化アルゴリズムの設定
     optimizer = torch.optim.Adam(trainable_params, lr=lr, weight_decay=weight_decay)
 
+    # トレーナーの設定
     trainer = Trainer(model, criterion, metrics, optimizer,
                       config=config,
                       device=device,
@@ -52,11 +63,13 @@ def main(trial, config):
 
     # トレーナーのトレーニングメソッドを呼び出し、検証セットでの最終ロスを返す
     loss = trainer.train()
+
+    # 最も良かったエポックの時の検証損失を返す
     return loss
 
 def objective(trial):
     # ConfigParserのインスタンスを作成
-    args = argparse.ArgumentParser(description='PyTorch Template')
+    args = argparse.ArgumentParser(description='Weather Forecasting')
     args.add_argument('-c', '--config', default=None, type=str,
                       help='config file path (default: None)')
     args.add_argument('-r', '--resume', default=None, type=str,

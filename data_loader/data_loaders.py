@@ -11,7 +11,6 @@ class WeatherDataset(Dataset):
     def __init__(self, filepath):
         # データの読み込み
         self.data = pd.read_csv(filepath)
-        self.data['date'] = pd.to_datetime(self.data['date'])
 
         # 次の日のmeantempを予測するために必要なカラムを選択
         self.features = ['meantemp', 'humidity', 'wind_speed', 'meanpressure']
@@ -19,7 +18,6 @@ class WeatherDataset(Dataset):
         # 特徴量とラベルを準備
         self.X = []
         self.y = []
-        self.timestamp = []
 
         # 異常値の処理
         self.bounds = {}
@@ -39,14 +37,6 @@ class WeatherDataset(Dataset):
                 feature_data.append(self.data.loc[i:i+29, feature].values)
             self.X.append(feature_data)
             self.y.append(self.data.loc[i+30, 'meantemp'])  # 30日目のmeantempをラベルとして追加
-            # index_data = [i + j for j in range(30)]
-            index_data = [
-                [self.data.loc[i+j, 'date'].month,
-                 self.data.loc[i+j, 'date'].day,
-                 self.data.loc[i+j, 'date'].weekday(),
-                 0]  # 0時を示す
-                for j in range(30)]
-            self.timestamp.append(index_data)
 
         print("Bounds for Outliers:", self.bounds)
         print("Min-Max Values for Normalization:", self.min_max_values)
@@ -82,8 +72,7 @@ class WeatherDataset(Dataset):
         # 特徴量とターゲットを返す
         features = torch.tensor(np.array(self.X[idx]), dtype=torch.float32)
         target = torch.tensor(np.array([self.y[idx]]), dtype=torch.float32)
-        seq_x_mark = torch.tensor(np.array(self.timestamp[idx]), dtype=torch.float32)
-        return features, target, seq_x_mark
+        return features, target
 
 class CustomDataLoader(BaseDataLoader):
     def __init__(self, filepath, batch_size=64, shuffle=True, validation_split=0.2, num_workers=0):
